@@ -1,0 +1,5 @@
+[rules]
+check_main = true
+check_unused_var = false
+check_unused_import = true
+
