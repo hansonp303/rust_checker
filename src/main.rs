@@ -6,6 +6,7 @@ use rust_checker::{
     scanner::scan_rust_files,
     rules::RuleConfig,
     report::{FileValidationResult, ValidationSummary, print_json_report},
+    tooling::{run_fmt_check, run_clippy_check},
 };
 use chrono::Utc;
 use colored::*;
@@ -19,18 +20,39 @@ fn main() {
         eprintln!("  --skip-main             Skip `fn main` check");
         eprintln!("  --allow-unused-var      Allow `let _` pattern");
         eprintln!("  --allow-unused-import   Allow unused `use` statements");
-        eprintln!("  --json                  Output report as JSON\n");
+        eprintln!("  --json                  Output report as JSON");
+        eprintln!("  --check-fmt             Run `cargo fmt --check`");
+        eprintln!("  --check-clippy          Run `cargo clippy --quiet -- -Dwarnings`\n");
         std::process::exit(1);
     }
 
     let project_path = &args[1];
     let config = RuleConfig::from_args(&args);
     let output_json = args.contains(&"--json".to_string());
+    let check_fmt = args.contains(&"--check-fmt".to_string());
+    let check_clippy = args.contains(&"--check-clippy".to_string());
 
     println!(
         "{}",
         format!("[{}] Checking Rust project recursively at: {}\n", Utc::now(), project_path).blue()
     );
+
+    // Optional: Run tooling checks
+    if check_fmt {
+        if run_fmt_check(project_path) {
+            println!("{}", " cargo fmt check passed.".green());
+        } else {
+            eprintln!("{}", " cargo fmt check failed. Please format your code.".red());
+        }
+    }
+
+    if check_clippy {
+        if run_clippy_check(project_path) {
+            println!("{}", " cargo clippy check passed.".green());
+        } else {
+            eprintln!("{}", " cargo clippy check failed. Please fix lint issues.".red());
+        }
+    }
 
     // Step 1: Run cargo check
     let output = Command::new("cargo")
@@ -50,7 +72,7 @@ fn main() {
     // Step 2: Recursively validate each Rust file and collect results
     let rust_files = scan_rust_files(project_path);
     if rust_files.is_empty() {
-        println!("{}", " No .rs files found in the directory.".yellow());
+        println!("{}", "️ No .rs files found in the directory.".yellow());
         return;
     }
 
