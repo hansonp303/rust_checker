@@ -2,11 +2,8 @@ use chrono::Utc;
 use std::fs;
 
 pub mod unused_checker;
-pub mod scanner;
-
 use unused_checker::check_unused_imports;
 
-/// Validate a single Rust file for basic rules.
 pub fn validate_rust_file(file_path: &str) -> Result<(), String> {
     println!("[{}] Validating file: {}", Utc::now(), file_path);
 
