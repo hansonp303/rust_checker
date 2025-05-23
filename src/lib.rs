@@ -3,6 +3,8 @@ use std::fs;
 
 pub mod unused_checker;
 pub mod rules;
+pub mod tooling;
+
 
 use unused_checker::check_unused_imports;
 use rules::RuleConfig;
