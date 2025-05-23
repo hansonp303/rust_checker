@@ -1,7 +1,7 @@
 use std::env;
 use std::process::Command;
 use std::str;
-use rust_checker::{validate_rust_file, scanner::scan_rust_files};
+use rust_checker::{validate_rust_file, scanner::scan_rust_files, rules::RuleConfig};
 use chrono::Utc;
 use colored::*;
 
@@ -9,11 +9,17 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("{}", "Usage: cargo run -- <path_to_rust_project>".red());
+        eprintln!("{}", "Usage: cargo run -- <path_to_rust_project> [flags]".red());
+        eprintln!("{}", "\nOptional flags:".blue());
+        eprintln!("  --skip-main             Skip `fn main` check");
+        eprintln!("  --allow-unused-var      Allow `let _` pattern");
+        eprintln!("  --allow-unused-import   Allow unused `use` statements\n");
         std::process::exit(1);
     }
 
     let project_path = &args[1];
+    let config = RuleConfig::from_args(&args);
+
     println!(
         "{}",
         format!("[{}] Checking Rust project recursively at: {}\n", Utc::now(), project_path).blue()
@@ -37,7 +43,7 @@ fn main() {
     // Step 2: Recursively validate each Rust file and track summary
     let rust_files = scan_rust_files(project_path);
     if rust_files.is_empty() {
-        println!("{}", " No .rs files found in the directory.".yellow());
+        println!("{}", "️ No .rs files found in the directory.".yellow());
         return;
     }
 
@@ -45,7 +51,7 @@ fn main() {
     let mut failed = 0;
 
     for file_path in rust_files {
-        match validate_rust_file(&file_path) {
+        match validate_rust_file(&file_path, &config) {
             Ok(_) => {
                 println!("{}", format!(" {} passed validation.", file_path).green());
                 passed += 1;
@@ -61,7 +67,7 @@ fn main() {
     println!(
         "\n{}",
         format!(
-            " Summary:  {} passed |  {} failed | 📄 {} total files checked",
+            " Summary:  {} passed |  {} failed |  {} total files checked",
             passed, failed, total
         )
         .bold()
