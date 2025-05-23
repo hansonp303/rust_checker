@@ -4,6 +4,7 @@ use std::fs;
 pub mod unused_checker;
 pub mod rules;
 pub mod tooling;
+pub mod fixer;
 
 
 use unused_checker::check_unused_imports;
