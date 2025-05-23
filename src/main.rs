@@ -10,6 +10,7 @@ use rust_checker::{
 };
 use chrono::Utc;
 use colored::*;
+use rayon::prelude::*; //  Parallelism
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -37,7 +38,6 @@ fn main() {
         format!("[{}] Checking Rust project recursively at: {}\n", Utc::now(), project_path).blue()
     );
 
-    // Optional: Run tooling checks
     if check_fmt {
         if run_fmt_check(project_path) {
             println!("{}", " cargo fmt check passed.".green());
@@ -54,7 +54,6 @@ fn main() {
         }
     }
 
-    // Step 1: Run cargo check
     let output = Command::new("cargo")
         .arg("check")
         .current_dir(project_path)
@@ -69,23 +68,31 @@ fn main() {
         parse_and_display_errors(stderr);
     }
 
-    // Step 2: Recursively validate each Rust file and collect results
     let rust_files = scan_rust_files(project_path);
     if rust_files.is_empty() {
         println!("{}", "️ No .rs files found in the directory.".yellow());
         return;
     }
 
+    //  Parallel validation with Rayon
+    let results: Vec<_> = rust_files
+        .par_iter()
+        .map(|file_path| {
+            let result = validate_rust_file(file_path, &config);
+            (file_path.clone(), result)
+        })
+        .collect();
+
     let mut passed = 0;
     let mut failed = 0;
-    let mut results = Vec::new();
+    let mut output_results = Vec::new();
 
-    for file_path in rust_files {
-        match validate_rust_file(&file_path, &config) {
+    for (file_path, result) in results {
+        match result {
             Ok(_) => {
                 println!("{}", format!(" {} passed validation.", file_path).green());
                 passed += 1;
-                results.push(FileValidationResult {
+                output_results.push(FileValidationResult {
                     file: file_path,
                     passed: true,
                     error: None,
@@ -94,7 +101,7 @@ fn main() {
             Err(e) => {
                 eprintln!("{}", format!(" {} failed validation: {}", file_path, e).red());
                 failed += 1;
-                results.push(FileValidationResult {
+                output_results.push(FileValidationResult {
                     file: file_path,
                     passed: false,
                     error: Some(e),
@@ -107,7 +114,7 @@ fn main() {
         total_files: passed + failed,
         passed,
         failed,
-        results,
+        results: output_results,
     };
 
     if output_json {
