@@ -6,9 +6,10 @@ use rust_checker::{
     scanner::scan_rust_files,
     rules::RuleConfig,
     report::{FileValidationResult, ValidationSummary, print_json_report},
+    report::html::export_to_html,
     tooling::{run_fmt_check, run_clippy_check},
     config::Config,
-    fixer::auto_fix_unused_imports, //  Auto-fix support
+    fixer::auto_fix_unused_imports,
 };
 use chrono::Utc;
 use colored::*;
@@ -75,11 +76,10 @@ fn main() {
 
     let rust_files = scan_rust_files(project_path);
     if rust_files.is_empty() {
-        println!("{}", " ️ No .rs files found in the directory.".yellow());
+        println!("{}", "  No .rs files found in the directory.".yellow());
         return;
     }
 
-    //  Auto-fix before validation
     if auto_fix {
         for file_path in &rust_files {
             match auto_fix_unused_imports(file_path) {
@@ -137,11 +137,18 @@ fn main() {
         println!(
             "\n{}",
             format!(
-                " Summary:  {} passed |  {} failed |  {} total files checked",
+                "📝 Summary:  {} passed |  {} failed |  {} total files checked",
                 summary.passed, summary.failed, summary.total_files
             )
             .bold()
         );
+    }
+
+    //  HTML export
+    if let Err(e) = export_to_html(&summary, "target/report.html") {
+        eprintln!(" Failed to export HTML report: {}", e);
+    } else {
+        println!("{}", " HTML report saved to target/report.html".blue());
     }
 }
 
