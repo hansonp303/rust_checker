@@ -7,10 +7,11 @@ use rust_checker::{
     rules::RuleConfig,
     report::{FileValidationResult, ValidationSummary, print_json_report},
     tooling::{run_fmt_check, run_clippy_check},
+    config::Config, //  Load from file
 };
 use chrono::Utc;
 use colored::*;
-use rayon::prelude::*; //  Parallelism
+use rayon::prelude::*;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -28,7 +29,11 @@ fn main() {
     }
 
     let project_path = &args[1];
-    let config = RuleConfig::from_args(&args);
+
+    //  Load config file and merge with CLI flags
+    let file_config = Config::load(".rustchecker.toml");
+    let config = RuleConfig::from_args_and_config(&args, file_config.rules);
+
     let output_json = args.contains(&"--json".to_string());
     let check_fmt = args.contains(&"--check-fmt".to_string());
     let check_clippy = args.contains(&"--check-clippy".to_string());
@@ -70,11 +75,10 @@ fn main() {
 
     let rust_files = scan_rust_files(project_path);
     if rust_files.is_empty() {
-        println!("{}", "️ No .rs files found in the directory.".yellow());
+        println!("{}", " No .rs files found in the directory.".yellow());
         return;
     }
 
-    //  Parallel validation with Rayon
     let results: Vec<_> = rust_files
         .par_iter()
         .map(|file_path| {
