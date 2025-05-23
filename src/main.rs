@@ -7,7 +7,8 @@ use rust_checker::{
     rules::RuleConfig,
     report::{FileValidationResult, ValidationSummary, print_json_report},
     tooling::{run_fmt_check, run_clippy_check},
-    config::Config, //  Load from file
+    config::Config,
+    fixer::auto_fix_unused_imports, //  Auto-fix support
 };
 use chrono::Utc;
 use colored::*;
@@ -24,19 +25,18 @@ fn main() {
         eprintln!("  --allow-unused-import   Allow unused `use` statements");
         eprintln!("  --json                  Output report as JSON");
         eprintln!("  --check-fmt             Run `cargo fmt --check`");
-        eprintln!("  --check-clippy          Run `cargo clippy --quiet -- -Dwarnings`\n");
+        eprintln!("  --check-clippy          Run `cargo clippy --quiet -- -Dwarnings`");
+        eprintln!("  --fix                   Auto-fix unused imports (heuristic)\n");
         std::process::exit(1);
     }
 
     let project_path = &args[1];
-
-    //  Load config file and merge with CLI flags
     let file_config = Config::load(".rustchecker.toml");
     let config = RuleConfig::from_args_and_config(&args, file_config.rules);
-
     let output_json = args.contains(&"--json".to_string());
     let check_fmt = args.contains(&"--check-fmt".to_string());
     let check_clippy = args.contains(&"--check-clippy".to_string());
+    let auto_fix = args.contains(&"--fix".to_string());
 
     println!(
         "{}",
@@ -75,8 +75,18 @@ fn main() {
 
     let rust_files = scan_rust_files(project_path);
     if rust_files.is_empty() {
-        println!("{}", " No .rs files found in the directory.".yellow());
+        println!("{}", " ️ No .rs files found in the directory.".yellow());
         return;
+    }
+
+    //  Auto-fix before validation
+    if auto_fix {
+        for file_path in &rust_files {
+            match auto_fix_unused_imports(file_path) {
+                Ok(_) => println!(" ️ Auto-fixed unused imports in {}", file_path),
+                Err(e) => eprintln!(" Failed to fix {}: {}", file_path, e),
+            }
+        }
     }
 
     let results: Vec<_> = rust_files
