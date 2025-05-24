@@ -9,6 +9,7 @@ use rust_checker::{
         FileValidationResult, ValidationSummary, print_json_report,
         html::export_to_html,
         badge::export_svg_badge,
+        junit::export_to_junit_xml,
     },
     tooling::{run_fmt_check, run_clippy_check},
     config::Config,
@@ -22,7 +23,7 @@ use rayon::prelude::*;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    // Plugin scaffolding shortcut
+    // Generate plugin template
     if args.len() == 3 && args[1] == "--gen-plugin" {
         match generate_plugin_template(&args[2]) {
             Ok(_) => {
@@ -173,6 +174,12 @@ fn main() {
         eprintln!("Failed to export badge: {}", e);
     } else {
         println!("{}", "Badge saved to target/status-badge.svg".blue());
+    }
+
+    if let Err(e) = export_to_junit_xml(&summary, "target/report.xml") {
+        eprintln!("Failed to export JUnit XML report: {}", e);
+    } else {
+        println!("{}", "JUnit XML report saved to target/report.xml".blue());
     }
 
     let plugin_results = compile_and_run_plugins("plugins");
