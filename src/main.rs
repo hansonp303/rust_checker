@@ -5,8 +5,11 @@ use rust_checker::{
     validate_rust_file,
     scanner::scan_rust_files,
     rules::RuleConfig,
-    report::{FileValidationResult, ValidationSummary, print_json_report},
-    report::html::export_to_html,
+    report::{
+        FileValidationResult, ValidationSummary, print_json_report,
+        html::export_to_html,
+        badge::export_svg_badge,
+    },
     tooling::{run_fmt_check, run_clippy_check},
     config::Config,
     fixer::auto_fix_unused_imports,
@@ -137,18 +140,25 @@ fn main() {
         println!(
             "\n{}",
             format!(
-                "📝 Summary:  {} passed |  {} failed |  {} total files checked",
+                " Summary:  {} passed |  {} failed |  {} total files checked",
                 summary.passed, summary.failed, summary.total_files
             )
             .bold()
         );
     }
 
-    //  HTML export
+    //  HTML report
     if let Err(e) = export_to_html(&summary, "target/report.html") {
         eprintln!(" Failed to export HTML report: {}", e);
     } else {
         println!("{}", " HTML report saved to target/report.html".blue());
+    }
+
+    //  ️ SVG badge
+    if let Err(e) = export_svg_badge(&summary, "target/status-badge.svg") {
+        eprintln!(" Failed to export badge: {}", e);
+    } else {
+        println!("{}", " ️ Badge saved to target/status-badge.svg".blue());
     }
 }
 
