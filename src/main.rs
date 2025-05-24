@@ -160,6 +160,11 @@ fn main() {
     } else {
         println!("{}", " ️ Badge saved to target/status-badge.svg".blue());
     }
+
+    //  Exit with non-zero code if validation failed
+    if failed > 0 {
+        std::process::exit(1);
+    }
 }
 
 fn parse_and_display_errors(output: &str) {
