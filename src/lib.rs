@@ -5,6 +5,7 @@ pub mod unused_checker;
 pub mod rules;
 pub mod tooling;
 pub mod fixer;
+pub mod plugin;
 
 
 use unused_checker::check_unused_imports;

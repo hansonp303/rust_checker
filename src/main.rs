@@ -13,6 +13,7 @@ use rust_checker::{
     tooling::{run_fmt_check, run_clippy_check},
     config::Config,
     fixer::auto_fix_unused_imports,
+    plugin::load_plugin_sources,
 };
 use chrono::Utc;
 use colored::*;
@@ -49,17 +50,17 @@ fn main() {
 
     if check_fmt {
         if run_fmt_check(project_path) {
-            println!("{}", " cargo fmt check passed.".green());
+            println!("{}", "cargo fmt check passed.".green());
         } else {
-            eprintln!("{}", " cargo fmt check failed. Please format your code.".red());
+            eprintln!("{}", "cargo fmt check failed. Please format your code.".red());
         }
     }
 
     if check_clippy {
         if run_clippy_check(project_path) {
-            println!("{}", " cargo clippy check passed.".green());
+            println!("{}", "cargo clippy check passed.".green());
         } else {
-            eprintln!("{}", " cargo clippy check failed. Please fix lint issues.".red());
+            eprintln!("{}", "cargo clippy check failed. Please fix lint issues.".red());
         }
     }
 
@@ -70,24 +71,24 @@ fn main() {
         .expect("Failed to execute cargo check");
 
     if output.status.success() {
-        println!("{}", " No compilation errors found.\n".green());
+        println!("{}", "No compilation errors found.\n".green());
     } else {
-        println!("{}", " Compilation errors detected:".red());
+        println!("{}", "Compilation errors detected:".red());
         let stderr = str::from_utf8(&output.stderr).unwrap_or("Unknown error");
         parse_and_display_errors(stderr);
     }
 
     let rust_files = scan_rust_files(project_path);
     if rust_files.is_empty() {
-        println!("{}", "  No .rs files found in the directory.".yellow());
+        println!("{}", "No .rs files found in the directory.".yellow());
         return;
     }
 
     if auto_fix {
         for file_path in &rust_files {
             match auto_fix_unused_imports(file_path) {
-                Ok(_) => println!(" ️ Auto-fixed unused imports in {}", file_path),
-                Err(e) => eprintln!(" Failed to fix {}: {}", file_path, e),
+                Ok(_) => println!("Auto-fixed unused imports in {}", file_path),
+                Err(e) => eprintln!("Failed to fix {}: {}", file_path, e),
             }
         }
     }
@@ -107,7 +108,7 @@ fn main() {
     for (file_path, result) in results {
         match result {
             Ok(_) => {
-                println!("{}", format!(" {} passed validation.", file_path).green());
+                println!("{}", format!("{} passed validation.", file_path).green());
                 passed += 1;
                 output_results.push(FileValidationResult {
                     file: file_path,
@@ -116,7 +117,7 @@ fn main() {
                 });
             }
             Err(e) => {
-                eprintln!("{}", format!(" {} failed validation: {}", file_path, e).red());
+                eprintln!("{}", format!("{} failed validation: {}", file_path, e).red());
                 failed += 1;
                 output_results.push(FileValidationResult {
                     file: file_path,
@@ -140,28 +141,34 @@ fn main() {
         println!(
             "\n{}",
             format!(
-                " Summary:  {} passed |  {} failed |  {} total files checked",
+                "Summary: {} passed | {} failed | {} total files checked",
                 summary.passed, summary.failed, summary.total_files
             )
             .bold()
         );
     }
 
-    //  HTML report
     if let Err(e) = export_to_html(&summary, "target/report.html") {
-        eprintln!(" Failed to export HTML report: {}", e);
+        eprintln!("Failed to export HTML report: {}", e);
     } else {
-        println!("{}", " HTML report saved to target/report.html".blue());
+        println!("{}", "HTML report saved to target/report.html".blue());
     }
 
-    //  ️ SVG badge
     if let Err(e) = export_svg_badge(&summary, "target/status-badge.svg") {
-        eprintln!(" Failed to export badge: {}", e);
+        eprintln!("Failed to export badge: {}", e);
     } else {
-        println!("{}", " ️ Badge saved to target/status-badge.svg".blue());
+        println!("{}", "Badge saved to target/status-badge.svg".blue());
     }
 
-    //  Exit with non-zero code if validation failed
+    // Plugin execution (logging only)
+    let plugin_sources = load_plugin_sources("plugins");
+    if !plugin_sources.is_empty() {
+        println!("{}", "\nRunning custom plugins...".purple());
+        for (name, _) in plugin_sources {
+            println!("Plugin '{}' detected (execution not yet implemented)", name);
+        }
+    }
+
     if failed > 0 {
         std::process::exit(1);
     }
