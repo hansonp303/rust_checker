@@ -1,4 +1,4 @@
-use std::fs;
+use std::fs::{self, write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -68,5 +68,19 @@ pub fn compile_and_run_plugins(plugin_dir: &str) -> Vec<(String, Result<(), Stri
     }
 
     results
+}
+
+/// Generates a template plugin .rs file under plugins/
+pub fn generate_plugin_template(name: &str) -> Result<(), String> {
+    let filename = format!("plugins/{}.rs", name);
+    let code = r#"fn main() {
+    // TODO: Implement your plugin logic here
+    // Output "ok" if pass, or "err: <reason>" if fail
+    println!("ok");
+}
+"#;
+
+    write(&filename, code).map_err(|e| format!("Failed to write plugin file: {}", e))?;
+    Ok(())
 }
 

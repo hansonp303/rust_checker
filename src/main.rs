@@ -13,7 +13,7 @@ use rust_checker::{
     tooling::{run_fmt_check, run_clippy_check},
     config::Config,
     fixer::auto_fix_unused_imports,
-    plugin::{load_plugin_sources, compile_and_run_plugins},
+    plugin::{load_plugin_sources, compile_and_run_plugins, generate_plugin_template},
 };
 use chrono::Utc;
 use colored::*;
@@ -21,6 +21,20 @@ use rayon::prelude::*;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+
+    // Plugin scaffolding shortcut
+    if args.len() == 3 && args[1] == "--gen-plugin" {
+        match generate_plugin_template(&args[2]) {
+            Ok(_) => {
+                println!("Plugin template created at plugins/{}.rs", args[2]);
+                return;
+            }
+            Err(e) => {
+                eprintln!("Failed to generate plugin: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
 
     if args.len() < 2 {
         eprintln!("{}", "Usage: cargo run -- <path_to_rust_project> [flags]".red());
@@ -31,7 +45,8 @@ fn main() {
         eprintln!("  --json                  Output report as JSON");
         eprintln!("  --check-fmt             Run `cargo fmt --check`");
         eprintln!("  --check-clippy          Run `cargo clippy --quiet -- -Dwarnings`");
-        eprintln!("  --fix                   Auto-fix unused imports (heuristic)\n");
+        eprintln!("  --fix                   Auto-fix unused imports (heuristic)");
+        eprintln!("  --gen-plugin <name>     Scaffold a new plugin in /plugins\n");
         std::process::exit(1);
     }
 
@@ -160,7 +175,6 @@ fn main() {
         println!("{}", "Badge saved to target/status-badge.svg".blue());
     }
 
-    // Run dynamic plugins
     let plugin_results = compile_and_run_plugins("plugins");
     if !plugin_results.is_empty() {
         println!("\nPlugin execution results:");
