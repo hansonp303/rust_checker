@@ -13,7 +13,7 @@ use rust_checker::{
     tooling::{run_fmt_check, run_clippy_check},
     config::Config,
     fixer::auto_fix_unused_imports,
-    plugin::load_plugin_sources,
+    plugin::{load_plugin_sources, compile_and_run_plugins},
 };
 use chrono::Utc;
 use colored::*;
@@ -160,12 +160,15 @@ fn main() {
         println!("{}", "Badge saved to target/status-badge.svg".blue());
     }
 
-    // Plugin execution (logging only)
-    let plugin_sources = load_plugin_sources("plugins");
-    if !plugin_sources.is_empty() {
-        println!("{}", "\nRunning custom plugins...".purple());
-        for (name, _) in plugin_sources {
-            println!("Plugin '{}' detected (execution not yet implemented)", name);
+    // Run dynamic plugins
+    let plugin_results = compile_and_run_plugins("plugins");
+    if !plugin_results.is_empty() {
+        println!("\nPlugin execution results:");
+        for (name, result) in plugin_results {
+            match result {
+                Ok(_) => println!("Plugin {} passed.", name),
+                Err(e) => eprintln!("Plugin {} failed: {}", name, e),
+            }
         }
     }
 
