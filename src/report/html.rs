@@ -10,6 +10,7 @@ pub fn export_to_html(summary: &ValidationSummary, path: &str) -> Result<(), Str
 
     let mut file = File::create(output_path).map_err(|e| format!("Failed to create file: {}", e))?;
 
+    (|| -> std::io::Result<()> {
     writeln!(file, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Rust Checker Report</title>
     <style>
     body {{ font-family: Arial; background: #fdfdfd; color: #333; }}
@@ -28,20 +29,20 @@ pub fn export_to_html(summary: &ValidationSummary, path: &str) -> Result<(), Str
     )?;
 
     writeln!(file, "<table><tr><th>File</th><th>Status</th><th>Error</th></tr>")?;
-    for FileValidationResult { file, passed, error } in &summary.results {
+    for FileValidationResult { file: source_file, passed, error } in &summary.results {
         let class = if *passed { "pass" } else { "fail" };
         writeln!(
             file,
             "<tr class=\"{}\"><td>{}</td><td>{}</td><td>{}</td></tr>",
             class,
-            file,
+            source_file,
             if *passed { " Passed" } else { " Failed" },
             error.clone().unwrap_or_default()
         )?;
     }
 
     writeln!(file, "</table></body></html>")?;
-
     Ok(())
+    })().map_err(|e| e.to_string())
 }
 

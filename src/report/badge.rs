@@ -8,7 +8,7 @@ pub fn export_svg_badge(summary: &ValidationSummary, output_path: &str) -> Resul
     let status = if summary.failed == 0 { "passing" } else { "failing" };
     let color = if summary.failed == 0 { "#4c1" } else { "#e05d44" };
 
-    let svg = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="150" height="20">
+    let svg = format!(r##"<svg xmlns="http://www.w3.org/2000/svg" width="150" height="20">
   <linearGradient id="b" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
     <stop offset="1" stop-opacity=".1"/>
@@ -28,7 +28,7 @@ pub fn export_svg_badge(summary: &ValidationSummary, output_path: &str) -> Resul
     <text x="120" y="15" fill="#010101" fill-opacity=".3">{status}</text>
     <text x="120" y="14">{status}</text>
   </g>
-</svg>"#,
+</svg>"##,
         label = label,
         status = status,
         color = color
