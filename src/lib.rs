@@ -2,6 +2,7 @@ use chrono::Utc;
 use std::fs;
 
 pub mod unused_checker;
+pub mod config;
 pub mod rules;
 pub mod tooling;
 pub mod fixer;
