@@ -1,5 +1,5 @@
 use actix_web::{get, web, App, HttpServer, Responder, HttpResponse};
-use crate::report::{ValidationSummary, FileValidationResult};
+use crate::report::ValidationSummary;
 use std::sync::Mutex;
 
 #[get("/")]
@@ -13,8 +13,8 @@ async fn summary(data: web::Data<Mutex<ValidationSummary>>) -> impl Responder {
     HttpResponse::Ok().json(&*summary)
 }
 
-pub async fn run_dashboard(summary: ValidationSummary) -> std::io::Result<()> {
-    let shared_data = web::Data::new(Mutex::new(summary));
+pub async fn run_dashboard(initial_summary: ValidationSummary) -> std::io::Result<()> {
+    let shared_data = web::Data::new(Mutex::new(initial_summary));
     HttpServer::new(move || {
         App::new()
             .app_data(shared_data.clone())

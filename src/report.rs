@@ -1,3 +1,7 @@
+pub mod html;
+pub mod badge;
+pub mod junit;
+
 use serde::Serialize;
 
 #[derive(Serialize)]
